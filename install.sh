@@ -433,7 +433,10 @@ fcgi_pools() {
   chmod 644 "$dir/check.php"
   while read -r f; do
     awk -F'=' '/^[[:space:]]*\[.+\][[:space:]]*$/ { pool=$0; gsub(/[[:space:]]/, "", pool); gsub(/^\[|\]$/, "", pool) }
-               /^[[:space:]]*listen[[:space:]]*=/ && pool != "global" { v=$2; gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); print pool "|" v }' "$f"
+               /^[[:space:]]*listen[[:space:]]*=/ && pool != "global" {
+                 v=$2; gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); gsub(/^"|"$/, "", v)
+                 while ((i = index(v, "$pool")) > 0) v = substr(v, 1, i - 1) pool substr(v, i + 5)
+                 print pool "|" v }' "$f"
   done < <(find_pool_files) | sort -u | while IFS='|' read -r pool addr; do
     case "$addr" in
       /*)          [ -S "$addr" ] || { echo "$pool|$addr|ERR|not running"; continue; } ;;
